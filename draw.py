@@ -4,18 +4,21 @@ from gmath import *
 
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons,x0,y0,z0)
-    add_point(polygons,x2,y2,z2)
     add_point(polygons,x1,y1,z1)
+    add_point(polygons,x2,y2,z2)
 
 def draw_polygons( polygons, screen, color ):
     if len(polygons) < 3:
         print('Need at least 3 points to draw')
         return
     i=0
+    view=[0,0,1]
     while i<len(polygons):
-        draw_line(int(polygons[i][0]),int(polygons[i][1]),int(polygons[i+1][0]),int(polygons[i+1][1]),screen,color)
-        draw_line(int(polygons[i+1][0]),int(polygons[i+1][1]),int(polygons[i+2][0]),int(polygons[i+2][1]),screen,color)
-        draw_line(int(polygons[i+2][0]),int(polygons[i+2][1]),int(polygons[i][0]),int(polygons[i][1]),screen,color)
+        normal=calculate_normal(polygons,i)
+        if(dot_product(view,normal)>0):
+            draw_line(int(polygons[i][0]),int(polygons[i][1]),int(polygons[i+1][0]),int(polygons[i+1][1]),screen,color)
+            draw_line(int(polygons[i+1][0]),int(polygons[i+1][1]),int(polygons[i+2][0]),int(polygons[i+2][1]),screen,color)
+            draw_line(int(polygons[i+2][0]),int(polygons[i+2][1]),int(polygons[i][0]),int(polygons[i][1]),screen,color)
         i+=3
 
 def add_box( polygons, x, y, z, width, height, depth ):
@@ -23,23 +26,23 @@ def add_box( polygons, x, y, z, width, height, depth ):
     y1 = y - height
     z1 = z - depth
 
-    #front
-    add_polygon(polygons, x, y, z, x1, y, z, x1, y1, z)
-    add_polygon(polygons, x1, y1, z, x, y1, z, x, y, z)
-    add_polygon(polygons, x, y, z1, x1, y, z1, x1, y1, z1)
+    #front and back
+    add_polygon(polygons, x, y, z, x, y1, z, x1, y, z)
+    add_polygon(polygons, x, y1, z, x1, y1, z, x1, y, z)
+    add_polygon(polygons, x1, y, z1, x1, y1, z1, x, y, z1)
     add_polygon(polygons, x1, y1, z1, x, y1, z1, x, y, z1)
 
-    #back
-    add_polygon(polygons, x, y1, z, x1, y1, z, x1, y1, z1)
-    add_polygon(polygons, x1, y1, z1, x, y1, z1, x, y1, z)
-    add_polygon(polygons, x, y, z, x1, y, z, x1, y, z1)
-    add_polygon(polygons, x1, y, z1, x, y, z1, x, y, z)
-
     #sides
-    add_polygon(polygons, x, y, z, x, y, z1, x, y1, z1)
+    add_polygon(polygons, x1, y, z, x1, y1, z, x1, y, z1)
+    add_polygon(polygons, x1, y1, z, x1, y1, z1, x1, y, z1)
+    add_polygon(polygons, x, y1, z1, x, y, z, x, y, z1)
     add_polygon(polygons, x, y1, z1, x, y1, z, x, y, z)
-    add_polygon(polygons, x1, y, z, x1, y1, z, x1, y1, z1)
-    add_polygon(polygons, x1, y1, z1, x1, y, z1, x1, y, z)
+
+    #top and floor
+    add_polygon(polygons, x, y, z1, x, y, z, x1, y, z1)
+    add_polygon(polygons, x, y, z, x1, y, z, x1, y, z1)
+    add_polygon(polygons, x, y1, z, x, y1, z1, x1, y1, z)
+    add_polygon(polygons, x, y1, z1, x1, y1, z1, x1, y1, z)
 
 def add_sphere(polygons, cx, cy, cz, r, steps ):
     points = generate_sphere(cx, cy, cz, r, steps)
@@ -91,10 +94,8 @@ def generate_sphere( cx, cy, cz, r, steps ):
             z = r * math.sin(math.pi * circ) * math.sin(2*math.pi * rot) + cz
 
             points.append([x, y, z])
-            #print 'rotation: %d\tcircle%d'%(rotation, circle)
     return points
 def add_torus(polygons, cx, cy, cz, r0, r1, steps ):
-    steps=10
     points = generate_torus(cx, cy, cz, r0, r1, steps)
     lat_start = 0
     lat_stop = steps
@@ -155,9 +156,9 @@ def generate_torus( cx, cy, cz, r0, r1, steps ):
         for circle in range(circ_start, circ_stop):
             circ = circle/float(steps)
 
-            x = math.cos(2*math.pi * rot) * (r0 * math.cos(2*math.pi * circ) + r1) + cx;
-            y = r0 * math.sin(2*math.pi * circ) + cy;
-            z = -1*math.sin(2*math.pi * rot) * (r0 * math.cos(2*math.pi * circ) + r1) + cz;
+            x = math.cos(2*math.pi * rot) * (r0 * math.cos(2*math.pi * circ) + r1) + cx
+            y = r0 * math.sin(2*math.pi * circ) + cy
+            z = -1*math.sin(2*math.pi * rot) * (r0 * math.cos(2*math.pi * circ) + r1) + cz
 
             points.append([x, y, z])
     return points
@@ -171,8 +172,8 @@ def add_circle( points, cx, cy, cz, r, steps ):
 
     while i <= steps:
         t = float(i)/steps
-        x1 = r * math.cos(2*math.pi * t) + cx;
-        y1 = r * math.sin(2*math.pi * t) + cy;
+        x1 = r * math.cos(2*math.pi * t) + cx
+        y1 = r * math.sin(2*math.pi * t) + cy
 
         add_edge(points, x0, y0, cz, x1, y1, cz)
         x0 = x1
@@ -291,7 +292,7 @@ def draw_line( x0, y0, x1, y1, screen, color ):
 
         #octant 7
         else:
-            d = A/2 - B;
+            d = A/2 - B
 
             while y > y1:
                 plot(screen, color, x, y)

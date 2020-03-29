@@ -11,3 +11,4 @@ polygons = []
 transform = new_matrix()
 
 parse_file( 'script', edges, polygons, transform, screen, color )
+print("pic.png")
